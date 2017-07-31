@@ -1,0 +1,37 @@
+Script for creating Jenkins Docker container
+
+Here, please comment line 24 ie; jenkins war.file and that will be the script for creating apache tomcat docker container.
+
+
+
+RUN yum -y install wget
+
+RUN wget http://mirrors.ocf.berkeley.edu/apache/tomcat/tomcat-8/v8.5.6/bin/apache-tomcat-8.5.6.tar.gz && \
+    mv apache-tomcat-8.5.6.tar.gz /usr/share/ && \
+    yum remove wget -y
+
+WORKDIR /usr/share/
+
+RUN tar -zxvf apache-tomcat-8.5.6.tar.gz && \
+    mv apache-tomcat-8.5.6 /opt/tomcat && \
+    groupadd tomcat && \
+    useradd -s /bin/bash -g tomcat tomcat && \
+    chown -Rf tomcat.tomcat /opt/tomcat && \
+    rm -rf /opt/tomcat/webapps/*
+
+ENV CATALINA_HOME /opt/tomcat/
+ENV JAVA_HOME /usr/java/latest
+ENV JRE_HOME $JAVA_HOME/jre
+
+ADD jenkins.war $CATALINA_HOME/webapps/
+
+ENV PATH $PATH:$CATALINA_HOME/bin
+
+RUN touch $CATALINA_HOME/bin/setenv.sh && \
+    echo 'export CATALINA_OPTS="-Xms512M -Xmx1024M -Djenkins.install.runSetupWizard=false"' >> $CATALINA_HOME/bin/setenv.sh
+
+WORKDIR $CATALINA_HOME/bin/
+ENTRYPOINT ["/bin/bash"]
+CMD ["catalina.sh", "run"]
+
+EXPOSE 8080 8009

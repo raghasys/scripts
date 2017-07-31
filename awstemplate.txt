@@ -1,0 +1,132 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Jenkins application stack (ec2 )",
+    "Parameters": {
+        "EnvironmentLevel": {
+            "Description": "Application developement EnvironmentLevel Development",
+            "Type": "String",
+            "Default": "Development"
+        }
+    },
+    "Mappings": {
+        "EnvironmentLevel": {
+            "Development": {
+                "KeyName": "tomcattest",
+                "Subnet": "subnet-dbe1fcad",
+                "AMI": "ami-6f68cf0f",
+                "AvailabilityZone": "us-west-2a",
+                "JenkinsnstanceType": "t2.large",
+                "SecurityGroups": [
+                    "sg-7c706b05"
+                    
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "Ipaddress": {
+            "Description": "Private IP Adress of the primary application server (Jenkins)",
+            "Value": {
+                "Fn::GetAtt": [
+                    "Jenkins",
+                    "PublicIp"
+                ]
+            }
+        }
+    },
+    "Resources": {
+        "Jenkins": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "InstanceType": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "JenkinsnstanceType"
+                    ]
+                },
+                "SubnetId": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "Subnet"
+                    ]
+                },
+                "AvailabilityZone": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "AvailabilityZone"
+                    ]
+                },
+                "SecurityGroupIds": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "SecurityGroups"
+                    ]
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "AMI"
+                    ]
+                },
+                "KeyName": {
+                    "Fn::FindInMap": [
+                        "EnvironmentLevel",
+                        {
+                            "Ref": "EnvironmentLevel"
+                        },
+                        "KeyName"
+                    ]
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -v\n",
+                                "yum install wget -y\n",
+                                "mkdir /usr/java\n",
+                                "cd /usr/java\n",
+                                "wget https://s3.amazonaws.com/s3-artifactsrepo/jdk-8u121-linux-x64.tar.gz\n",
+                                "tar -xvf jdk-8u121-linux-x64.tar.gz\n",
+                                "JAVA_HOME=/usr/java/jdk1.8.0_121/\n",
+                                "export  $JAVA_HOME\n",
+                                "PATH=$JAVA_HOME/bin:$PATH\n",
+                                "export PATH\n",
+                                "cd /usr/share\n",
+                                "wget https://s3.amazonaws.com/s3-artifactsrepo/apache-tomcat-8.5.11.tar.gz\n",
+                                "tar -xvf apache-tomcat-8.5.11.tar.gz\n",
+                                "cd /etc/rc.d/init.d/\n",
+                                "wget https://s3.amazonaws.com/s3-artifactsrepo/tomcat\n",
+                                "JAVA_HOME=/usr/java/jdk1.8.0_121/\n",
+                                "JAVA_HOME=/usr/java/jdk1.8.0_121/\n",
+                                "export  $JAVA_HOME\n",
+                                "PATH=$JAVA_HOME/bin:$PATH\n",
+                                "export PATH\n",
+                                "chmod 755 /etc/rc.d/init.d/tomcat\n",
+                                "chkconfig --level 2345 tomcat on\n",
+                                "cd /usr/share/apache-tomcat-8.5.11/bin\n",
+                                "./catalina.sh start\n"
+
+                            ]
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
